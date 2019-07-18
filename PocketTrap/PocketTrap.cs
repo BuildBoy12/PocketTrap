@@ -77,7 +77,7 @@ namespace PocketTrap
                 }
                 if(AlphaWarheadController.host.doorsClosed)
                 {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(500, DamageType.SCP_106);
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(500, DamageType.POCKET);
                 }
                 else
                 {
@@ -90,7 +90,7 @@ namespace PocketTrap
             {
                 if(AlphaWarheadController.host.doorsClosed)
                 {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(500, DamageType.SCP_106);
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(500, DamageType.POCKET);
                 }
                 else
                 {
