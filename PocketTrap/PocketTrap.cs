@@ -24,12 +24,12 @@ namespace PocketTrap
     )]
     public class PocketTrap : Plugin
     {
-        static internal PocketTrap instance;
+        static internal PocketTrap instance;    
 
         [ConfigOption]
         internal bool Animation = false;
         [ConfigOption]
-        internal bool ScpTeleport = true;
+        internal int[] IgnoredTeam = { };
         [ConfigOption]
         internal float Range = 2.5f;
         [ConfigOption]
@@ -107,10 +107,12 @@ namespace PocketTrap
     public class EventHandler : IEventHandlerWaitingForPlayers, IEventHandlerFixedUpdate, IEventHandlerPocketDimensionDie, IEventHandlerPocketDimensionExit
     {
         GameObject portal = null;
+        List<int> ignoredlist = null;
 
         public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
         {
             portal = null;
+            ignoredlist = new List<int>(PocketTrap.instance.IgnoredTeam);
         }
 
         public void OnPocketDimensionDie(PlayerPocketDimensionDieEvent ev)
@@ -118,8 +120,15 @@ namespace PocketTrap
             PocketTrap.instance.Debug($"[OnPocketDimensionDie] {ev.Player.Name}<{ev.Player.TeamRole.Role}> / {ev.Die}");
             if(ev.Player.TeamRole.Team == Smod2.API.Team.SCP)
             {
-                ev.Die = false;
-                ev.Player.Teleport(new Vector(portal.transform.position.x, portal.transform.position.y, portal.transform.position.z) + Vector.Up * 1.5f);
+                if(!PocketTrap.instance.Server.Map.WarheadDetonated)
+                {
+                    ev.Die = false;
+                    ev.Player.Teleport(new Vector(portal.transform.position.x, portal.transform.position.y, portal.transform.position.z) + Vector.Up * 1.5f);
+                }
+                else
+                {
+                    ev.Die = true;
+                }
             }
         }
 
@@ -127,19 +136,27 @@ namespace PocketTrap
         {
             PocketTrap.instance.Debug($"[OnPocketDimensionExit] {ev.Player.Name}<{ev.Player.TeamRole.Role}> / {ev.ExitPosition}");
             if(ev.Player.TeamRole.Team == Smod2.API.Team.SCP)
-            {
-                ev.ExitPosition = new Vector(portal.transform.position.x, portal.transform.position.y, portal.transform.position.z) + Vector.Up * 1.5f;
+            {      
+                if(!PocketTrap.instance.Server.Map.WarheadDetonated)
+                {
+                    ev.ExitPosition = new Vector(portal.transform.position.x, portal.transform.position.y, portal.transform.position.z) + Vector.Up * 1.5f;
+                }
+                else
+                {
+                    ev.Player.Kill(DamageType.NUKE);
+                }
             }
         }
 
         public void OnFixedUpdate(FixedUpdateEvent ev)
         {
-            if(portal != null)
+            if(portal != null && ignoredlist != null)
             {
                 foreach(Player player in PocketTrap.instance.Server.GetPlayers())
                 {
-                    if( (Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range && !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal)
-                        && (PocketTrap.instance.ScpTeleport || player.TeamRole.Team != Smod2.API.Team.SCP)
+                    if( (Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range 
+                        && !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal)
+                        && !ignoredlist.Contains((int)player.TeamRole.Team)
                         )
                     {
                         PocketTrap.instance.Debug($"[OnFixedUpdate] Target found:{player.Name}<{player.TeamRole.Role}>");
