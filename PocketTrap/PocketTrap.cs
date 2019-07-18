@@ -30,7 +30,9 @@ namespace PocketTrap
         internal bool Animation = false;
         [ConfigOption]
         internal int[] IgnoredTeam = { };
-        [ConfigOption]
+		[ConfigOption]
+		internal int[] IgnoredRoles = { };
+		[ConfigOption]
         internal float Range = 2.5f;
         [ConfigOption]
         internal float Cooltime = 10.0f;
@@ -108,11 +110,17 @@ namespace PocketTrap
     {
         GameObject portal = null;
         List<int> ignoredlist = null;
+		List<int> ignoredroles = null;
 
-        public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
+		//&& !player.TeamRole.Team.Equals(Team.RIP) && !player.TeamRole.Team.Equals((Team)(-1)) && !player.TeamRole.Role.Equals(Role.SCP_079)
+		public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
         {
             portal = null;
             ignoredlist = new List<int>(PocketTrap.instance.IgnoredTeam);
+			if (!ignoredlist.Contains((int)Smod2.API.Team.SPECTATOR)) ignoredlist.Add((int)Smod2.API.Team.SPECTATOR);
+			if (!ignoredlist.Contains((int)Smod2.API.Team.NONE)) ignoredlist.Add((int)Smod2.API.Team.NONE);
+			ignoredroles = new List<int>(PocketTrap.instance.IgnoredRoles);
+			if (!ignoredroles.Contains((int)Role.SCP_079)) ignoredroles.Add((int)Role.SCP_079);
         }
 
         public void OnPocketDimensionDie(PlayerPocketDimensionDieEvent ev)
@@ -154,15 +162,17 @@ namespace PocketTrap
             {
                 foreach(Player player in PocketTrap.instance.Server.GetPlayers())
                 {
-                    if( (Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range 
-                        && !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal)
-                        && !ignoredlist.Contains((int)player.TeamRole.Team)
-                        )
-                    {
-                        PocketTrap.instance.Debug($"[OnFixedUpdate] Target found:{player.Name}<{player.TeamRole.Role}>");
-                        Timing.RunCoroutine(PocketTrap.instance._106PortalAnimation(player), Segment.FixedUpdate);
-                    }
-                }
+					// Avoids having to compute the distance of every unassigned/SCP-079/Spectator, and the classes/teams you set it to ignore
+					if (!ignoredlist.Contains((int)player.TeamRole.Team) && !ignoredroles.Contains((int)player.TeamRole.Role))
+					{
+						if (Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range
+							&& !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal)
+						{
+							PocketTrap.instance.Debug($"[OnFixedUpdate] Target found:{player.Name}<{player.TeamRole.Role}>");
+							Timing.RunCoroutine(PocketTrap.instance._106PortalAnimation(player), Segment.FixedUpdate);
+						}
+					}
+				}
             }
             else
             {
