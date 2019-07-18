@@ -1,6 +1,10 @@
 # PocketTrap
 SCP:SL Smod Plugin
 
+* When other SCPs step on the portal, they can enter the Pocket Dimension.
+* When leaving, it will return to the original portal position.
+* When a human steps on it, they are sent to the Pocket Dimension in the same way as SCP-106's attack.
+
 # Installation
 
 Put PocketTrap.dll to sm_plugins.
