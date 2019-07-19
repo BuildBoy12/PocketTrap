@@ -17,7 +17,7 @@ namespace PocketTrap
     description = "add trap function to SCP-106 portal",
     id = "sanyae2439.pockettrap",
     configPrefix = "ptrap",
-    version = "1.0",
+    version = "1.1",
     SmodMajor = 3,
     SmodMinor = 5,
     SmodRevision = 0
@@ -29,7 +29,7 @@ namespace PocketTrap
         [ConfigOption]
         internal bool Damage = true;
         [ConfigOption]
-        internal float DamageAmount = 40f;
+        internal int DamageAmount = 40;
         [ConfigOption]
         internal int[] IgnoredTeams = { };
         [ConfigOption]
@@ -39,7 +39,7 @@ namespace PocketTrap
         [ConfigOption]
         internal float Cooltime = 10.0f;
         [ConfigOption]
-        internal bool IgnoredScp035 = true;
+        internal bool IgnoredScp035 = false;
         [ConfigOption]
         internal bool Animation = false;
 
@@ -185,11 +185,11 @@ namespace PocketTrap
                 }
                 if(AlphaWarheadController.host.doorsClosed)
                 {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(500, DamageType.POCKET);
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Kill(DamageType.POCKET);
                 }
                 else
                 {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(40, DamageType.SCP_106);
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(PocketTrap.instance.DamageAmount, DamageType.SCP_106);
                     pms.SetPosition(Vector3.down * 1997f);
                 }
                 pms.SetAllowInput(true);
@@ -198,11 +198,11 @@ namespace PocketTrap
             {
                 if(AlphaWarheadController.host.doorsClosed)
                 {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(500, DamageType.POCKET);
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Kill(DamageType.POCKET);
                 }
                 else
                 {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(40, DamageType.SCP_106);
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(PocketTrap.instance.DamageAmount, DamageType.SCP_106);
                     pms.SetPosition(Vector3.down * 1997f);
                 }
             }
