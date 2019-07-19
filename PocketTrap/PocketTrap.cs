@@ -143,12 +143,12 @@ namespace PocketTrap
             {
                 foreach(Player player in PocketTrap.instance.Server.GetPlayers().FindAll(x => x.TeamRole.Team != Smod2.API.Team.SPECTATOR && x.TeamRole.Team != Smod2.API.Team.NONE && x.TeamRole.Role != Role.SCP_079))
                 {
-                    if(!ignoredteams.Contains((int)player.TeamRole.Team) && !ignoredroles.Contains((int)player.TeamRole.Role)
-                        || (!PocketTrap.instance.IgnoredScp035 && (player.GetGameObject() as GameObject).GetComponent<ServerRoles>().GetUncoloredRoleString().Contains("SCP-035")))
+                    if(!ignoredteams.Contains((int)player.TeamRole.Team) && !ignoredroles.Contains((int)player.TeamRole.Role))
                     {
                         if(Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range
                             && !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal
                             && isPortalActivated
+                            && (!PocketTrap.instance.IgnoredScp035 || !(player.GetGameObject() as GameObject).GetComponent<ServerRoles>().GetUncoloredRoleString().Contains("SCP-035"))
                             )
                         {
                             PocketTrap.instance.Debug($"[OnFixedUpdate] Target found:{player.Name}<{player.TeamRole.Role}>");
