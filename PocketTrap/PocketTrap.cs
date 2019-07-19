@@ -33,8 +33,8 @@ namespace PocketTrap
         [ConfigOption]
         internal int[] IgnoredTeams = { };
         [ConfigOption]
-		internal int[] IgnoredRoles = { };
-		[ConfigOption]
+        internal int[] IgnoredRoles = { };
+        [ConfigOption]
         internal float Range = 2.5f;
         [ConfigOption]
         internal float Cooltime = 10.0f;
@@ -73,7 +73,7 @@ namespace PocketTrap
         bool isPortalActivated = true;
         CoroutineHandle waitcoroutine;
 
-		public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
+        public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
         {
             portal = null;
             ignoredteams = new List<int>(PocketTrap.instance.IgnoredTeams);
@@ -101,7 +101,7 @@ namespace PocketTrap
         {
             PocketTrap.instance.Debug($"[OnPocketDimensionExit] {ev.Player.Name}<{ev.Player.TeamRole.Role}> / {ev.ExitPosition}");
             if(ev.Player.TeamRole.Team == Smod2.API.Team.SCP)
-            {      
+            {
                 if(!PocketTrap.instance.Server.Map.WarheadDetonated)
                 {
                     ev.ExitPosition = new Vector(portal.transform.position.x, portal.transform.position.y, portal.transform.position.z) + Vector.Up * 1.5f;
@@ -143,19 +143,19 @@ namespace PocketTrap
             {
                 foreach(Player player in PocketTrap.instance.Server.GetPlayers().FindAll(x => x.TeamRole.Team != Smod2.API.Team.SPECTATOR && x.TeamRole.Team != Smod2.API.Team.NONE && x.TeamRole.Role != Role.SCP_079))
                 {
-					if (!ignoredteams.Contains((int)player.TeamRole.Team) && !ignoredroles.Contains((int)player.TeamRole.Role) 
+                    if(!ignoredteams.Contains((int)player.TeamRole.Team) && !ignoredroles.Contains((int)player.TeamRole.Role)
                         || (!PocketTrap.instance.IgnoredScp035 && (player.GetGameObject() as GameObject).GetComponent<ServerRoles>().GetUncoloredRoleString().Contains("SCP-035")))
-					{
-						if (Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range
-							&& !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal
+                    {
+                        if(Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range
+                            && !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal
                             && isPortalActivated
                             )
-						{
-							PocketTrap.instance.Debug($"[OnFixedUpdate] Target found:{player.Name}<{player.TeamRole.Role}>");
-							Timing.RunCoroutine(_106PortalAnimation(player), Segment.FixedUpdate);
-						}
-					}
-				}
+                        {
+                            PocketTrap.instance.Debug($"[OnFixedUpdate] Target found:{player.Name}<{player.TeamRole.Role}>");
+                            Timing.RunCoroutine(_106PortalAnimation(player), Segment.FixedUpdate);
+                        }
+                    }
+                }
             }
             else
             {
