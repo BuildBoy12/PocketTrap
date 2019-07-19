@@ -15,7 +15,7 @@ Config Option | Value Type | Default Value | Description
 --- | :---: | :---: | ---
 ptrap_damage | Bool | true | Damaged when teleport.
 ptrap_damage_amount | Int | 40 | Damage amount.
-ptrap_ignored_scp035 | Bool | false | Whether to ignore 
+ptrap_ignored_scp035 | Bool | false | Whether to ignore SCP-035
 ptrap_ignored_teams | Int List | Empty | List of TeamIDs that'll be ignored for trap.
 ptrap_ignored_roles | Int List | Empty | List of RoleIDs that'll be ignored for trap.
 ptrap_range | Float | 2.5 | Range of trap.
