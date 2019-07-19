@@ -24,18 +24,24 @@ namespace PocketTrap
     )]
     public class PocketTrap : Plugin
     {
-        static internal PocketTrap instance;    
+        static internal PocketTrap instance;
 
         [ConfigOption]
-        internal bool Animation = false;
+        internal bool Damage = true;
         [ConfigOption]
-        internal int[] IgnoredTeam = { };
-		[ConfigOption]
+        internal float DamageAmount = 40f;
+        [ConfigOption]
+        internal int[] IgnoredTeams = { };
+        [ConfigOption]
 		internal int[] IgnoredRoles = { };
 		[ConfigOption]
         internal float Range = 2.5f;
         [ConfigOption]
         internal float Cooltime = 10.0f;
+        [ConfigOption]
+        internal bool IgnoredScp035 = true;
+        [ConfigOption]
+        internal bool Animation = false;
 
         public PocketTrap()
         {
@@ -56,71 +62,22 @@ namespace PocketTrap
         {
             this.AddEventHandlers(new EventHandler());
         }
-
-        public IEnumerator<float> _106PortalAnimation(Player player)
-        {
-            GameObject gameObject = player.GetGameObject() as GameObject;
-            Scp106PlayerScript ply106 = gameObject.GetComponent<Scp106PlayerScript>();
-            PlyMovementSync pms = gameObject.GetComponent<PlyMovementSync>();
-
-            if(ply106.goingViaThePortal) yield break;
-
-            ply106.goingViaThePortal = true;
-            if(PocketTrap.instance.Animation)
-            {
-                pms.SetAllowInput(false);
-
-                for(float i = 0f; i < 50; i++)
-                {
-                    var pos = gameObject.transform.position;
-                    pos.y -= i * 0.01f;
-                    pms.SetPosition(pos);
-                    yield return 0f;
-                }
-                if(AlphaWarheadController.host.doorsClosed)
-                {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(500, DamageType.POCKET);
-                }
-                else
-                {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(40, DamageType.SCP_106);
-                    pms.SetPosition(Vector3.down * 1997f);
-                }
-                pms.SetAllowInput(true);
-            }
-            else
-            {
-                if(AlphaWarheadController.host.doorsClosed)
-                {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(500, DamageType.POCKET);
-                }
-                else
-                {
-                    if(player.TeamRole.Team != Smod2.API.Team.SCP) player.Damage(40, DamageType.SCP_106);
-                    pms.SetPosition(Vector3.down * 1997f);
-                }
-            }
-            yield return Timing.WaitForSeconds(Cooltime);
-            ply106.goingViaThePortal = false;
-            yield break;
-        }
     }
 
-    public class EventHandler : IEventHandlerWaitingForPlayers, IEventHandlerFixedUpdate, IEventHandlerPocketDimensionDie, IEventHandlerPocketDimensionExit
+    public class EventHandler : IEventHandlerWaitingForPlayers, IEventHandlerFixedUpdate, IEventHandlerPocketDimensionDie, IEventHandlerPocketDimensionExit, IEventHandler106CreatePortal
     {
         GameObject portal = null;
         List<int> ignoredteams = null;
-		List<int> ignoredroles = null;
+        List<int> ignoredroles = null;
+        bool singleCreate = false;
+        bool isPortalActivated = true;
+        CoroutineHandle waitcoroutine;
 
-		//&& !player.TeamRole.Team.Equals(Team.RIP) && !player.TeamRole.Team.Equals((Team)(-1)) && !player.TeamRole.Role.Equals(Role.SCP_079)
 		public void OnWaitingForPlayers(WaitingForPlayersEvent ev)
         {
             portal = null;
-            ignoredteams = new List<int>(PocketTrap.instance.IgnoredTeam);
-			if (!ignoredteams.Contains((int)Smod2.API.Team.SPECTATOR)) ignoredteams.Add((int)Smod2.API.Team.SPECTATOR);
-			if (!ignoredteams.Contains((int)Smod2.API.Team.NONE)) ignoredteams.Add((int)Smod2.API.Team.NONE);
-			ignoredroles = new List<int>(PocketTrap.instance.IgnoredRoles);
-			if (!ignoredroles.Contains((int)Role.SCP_079)) ignoredroles.Add((int)Role.SCP_079);
+            ignoredteams = new List<int>(PocketTrap.instance.IgnoredTeams);
+            ignoredroles = new List<int>(PocketTrap.instance.IgnoredRoles);
         }
 
         public void OnPocketDimensionDie(PlayerPocketDimensionDieEvent ev)
@@ -156,20 +113,46 @@ namespace PocketTrap
             }
         }
 
+        public void On106CreatePortal(Player106CreatePortalEvent ev)
+        {
+            if(!singleCreate)
+            {
+                singleCreate = true;
+                return;
+            }
+            else
+            {
+                PocketTrap.instance.Debug($"[On106CreatePortal] {ev.Player.Name}<{ev.Player.TeamRole.Role}> / {ev.Position}");
+                if(waitcoroutine == null)
+                {
+                    waitcoroutine = Timing.RunCoroutine(_WaitForPortalActivated(), Segment.FixedUpdate);
+                }
+                else
+                {
+                    Timing.KillCoroutines(waitcoroutine);
+                    waitcoroutine = Timing.RunCoroutine(_WaitForPortalActivated(), Segment.FixedUpdate);
+                }
+                singleCreate = false;
+            }
+
+        }
+
         public void OnFixedUpdate(FixedUpdateEvent ev)
         {
-            if(portal != null && ignoredteams != null)
+            if(portal != null)
             {
-                foreach(Player player in PocketTrap.instance.Server.GetPlayers())
+                foreach(Player player in PocketTrap.instance.Server.GetPlayers().FindAll(x => x.TeamRole.Team != Smod2.API.Team.SPECTATOR && x.TeamRole.Team != Smod2.API.Team.NONE && x.TeamRole.Role != Role.SCP_079))
                 {
-					// Avoids having to compute the distance of every unassigned/SCP-079/Spectator, and the classes/teams you set it to ignore
-					if (!ignoredteams.Contains((int)player.TeamRole.Team) && !ignoredroles.Contains((int)player.TeamRole.Role))
+					if (!ignoredteams.Contains((int)player.TeamRole.Team) && !ignoredroles.Contains((int)player.TeamRole.Role) 
+                        || (!PocketTrap.instance.IgnoredScp035 && (player.GetGameObject() as GameObject).GetComponent<ServerRoles>().GetUncoloredRoleString().Contains("SCP-035")))
 					{
 						if (Vector3.Distance(player.GetPosition().ToVector3(), portal.transform.position) < PocketTrap.instance.Range
-							&& !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal)
+							&& !(player.GetGameObject() as GameObject).GetComponent<Scp106PlayerScript>().goingViaThePortal
+                            && isPortalActivated
+                            )
 						{
 							PocketTrap.instance.Debug($"[OnFixedUpdate] Target found:{player.Name}<{player.TeamRole.Role}>");
-							Timing.RunCoroutine(PocketTrap.instance._106PortalAnimation(player), Segment.FixedUpdate);
+							Timing.RunCoroutine(_106PortalAnimation(player), Segment.FixedUpdate);
 						}
 					}
 				}
@@ -178,6 +161,62 @@ namespace PocketTrap
             {
                 portal = GameObject.Find("SCP106_PORTAL");
             }
+        }
+
+        public IEnumerator<float> _106PortalAnimation(Player player)
+        {
+            GameObject gameObject = player.GetGameObject() as GameObject;
+            Scp106PlayerScript ply106 = gameObject.GetComponent<Scp106PlayerScript>();
+            PlyMovementSync pms = gameObject.GetComponent<PlyMovementSync>();
+
+            if(ply106.goingViaThePortal) yield break;
+
+            ply106.goingViaThePortal = true;
+            if(PocketTrap.instance.Animation)
+            {
+                pms.SetAllowInput(false);
+
+                for(float i = 0f; i < 50; i++)
+                {
+                    var pos = gameObject.transform.position;
+                    pos.y -= i * 0.01f;
+                    pms.SetPosition(pos);
+                    yield return 0f;
+                }
+                if(AlphaWarheadController.host.doorsClosed)
+                {
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(500, DamageType.POCKET);
+                }
+                else
+                {
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(40, DamageType.SCP_106);
+                    pms.SetPosition(Vector3.down * 1997f);
+                }
+                pms.SetAllowInput(true);
+            }
+            else
+            {
+                if(AlphaWarheadController.host.doorsClosed)
+                {
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(500, DamageType.POCKET);
+                }
+                else
+                {
+                    if(player.TeamRole.Team != Smod2.API.Team.SCP && PocketTrap.instance.Damage) player.Damage(40, DamageType.SCP_106);
+                    pms.SetPosition(Vector3.down * 1997f);
+                }
+            }
+            yield return Timing.WaitForSeconds(PocketTrap.instance.Cooltime);
+            ply106.goingViaThePortal = false;
+            yield break;
+        }
+
+        public IEnumerator<float> _WaitForPortalActivated()
+        {
+            isPortalActivated = false;
+            yield return Timing.WaitForSeconds(4f);
+            isPortalActivated = true;
+            yield break;
         }
     }
 }
