@@ -1,5 +1,5 @@
 # PocketTrap
-SCP:SL Smod Plugin
+SCP:SL EXILED Plugin
 
 * When other SCPs step on the portal, they can enter the Pocket Dimension.
 * When SCPs leaving, it will return to the original portal position.
@@ -7,9 +7,11 @@ SCP:SL Smod Plugin
 
 # Installation
 
-Put PocketTrap.dll to sm_plugins.
+Put PocketTrap.dll to the respective EXILED Plugins folder.
 
 # Config
+
+- Not all of these are confirmed to work, configure at your own discretion.
 
 Config Option | Value Type | Default Value | Description
 --- | :---: | :---: | ---
